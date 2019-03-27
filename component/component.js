@@ -191,6 +191,7 @@ export default Ember.Component.extend(NodeDriver, {
         }
         response.json().then((data) => {
           console.log('response.json data: ', data);
+          return data;
         });
       }).catch((err) => {
         console.log('error: ', err);
