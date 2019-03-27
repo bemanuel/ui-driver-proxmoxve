@@ -157,44 +157,45 @@ export default Ember.Component.extend(NodeDriver, {
       self.apiRequest('/access/ticket').then(function(data) {
         console.log('data out: ', data);
       });
-  },
-  apiRequest: function(path) {
-    let self       = this;
-    let apiUrl     = `${self.config.host}:${self.config.port}/api2/json${path}`;
-    let url        = `${ get(this, 'app.proxyEndpoint') }/`;
-    url           += apiUrl.replace(/^http[s]?:\/\//, '');
-    let params     = null;
-    let headers    = new Headers();
+    },
+    apiRequest: function(path) {
+      let self       = this;
+      let apiUrl     = `${self.config.host}:${self.config.port}/api2/json${path}`;
+      let url        = `${ get(this, 'app.proxyEndpoint') }/`;
+      url           += apiUrl.replace(/^http[s]?:\/\//, '');
+      let params     = null;
+      let headers    = new Headers();
 
-    console.log(`api call with authToken: ${self.authToken} for command: ${path}`);
-    if(self.authToken === null) {
-      let username = `${self.config.user}@${self.config.realm}`;
-      let password = self.config.password;
-      params       = `username=${username}&password=${password}`;
-      headers.append('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
-    } else {
-      headers.append('cookie', `PVEAuthCookie=${self.authToken.Ticket};`);
-			headers.append("CSRFPreventionToken", self.authToken.CSRFPreventionToken);
-			headers.append("username", self.authToken.Username);
-    }
-    headers.append('Accept', 'application/json');
-
-    return fetch(url, {
-      method: 'POST',
-      headers: headers,
-      dataType: 'json',
-      body: params
-    }).then((response) => {
-      if(response.status !== 200) {
-        console.log('response status not 200: ', response.status );
-        return;
+      console.log(`api call with authToken: ${self.authToken} for command: ${path}`);
+      if(self.authToken === null) {
+        let username = `${self.config.user}@${self.config.realm}`;
+        let password = self.config.password;
+        params       = `username=${username}&password=${password}`;
+        headers.append('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
+      } else {
+        headers.append('cookie', `PVEAuthCookie=${self.authToken.Ticket};`);
+        headers.append("CSRFPreventionToken", self.authToken.CSRFPreventionToken);
+        headers.append("username", self.authToken.Username);
       }
-      response.json().then((data) => {
-        console.log('response.json data: ', data);
+      headers.append('Accept', 'application/json');
+
+      return fetch(url, {
+        method: 'POST',
+        headers: headers,
+        dataType: 'json',
+        body: params
+      }).then((response) => {
+        if(response.status !== 200) {
+          console.log('response status not 200: ', response.status );
+          return;
+        }
+        response.json().then((data) => {
+          console.log('response.json data: ', data);
+        });
+      }).catch((err) => {
+        console.log('error: ', err);
       });
-    }).catch((err) => {
-      console.log('error: ', err);
-    });
+    },
   },
   // Any computed properties or custom logic can go here
 });
