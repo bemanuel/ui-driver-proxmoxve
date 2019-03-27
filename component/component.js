@@ -154,9 +154,11 @@ export default Ember.Component.extend(NodeDriver, {
       set(this, 'errors', null);
       let bridges = [];
 
-      let dataOut = self.apiRequest('/access/ticket');
+      self.apiRequest('/access/ticket').then(function(data) {
+        console.log('data out: ', data);
+      });
           
-      console.log('resp: ', dataOut);
+      
 
       /*
       console.log('atoken: ', atoken);
