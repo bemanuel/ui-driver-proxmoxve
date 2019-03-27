@@ -118,7 +118,7 @@ export default Ember.Component.extend(NodeDriver, {
   fieldDef: function(fieldName) {
     let fields = get(this, 'resourceFields');
     return fields[fieldName];
-  }/*.property('field', 'resourceType', 'schema')*/,
+  },
   // Add custom validation beyond what can be done from the config API schema
   validate() {
     // Get generic API validation errors
@@ -154,8 +154,17 @@ export default Ember.Component.extend(NodeDriver, {
       set(this, 'errors', null);
       let bridges = [];
 
-      self.apiRequest('/access/ticket').then(function(data) {
-        console.log('data out: ', data);
+      self.apiRequest('/access/ticket').then((response) => {
+        if(response.status !== 200) {
+          console.log('response status not 200: ', response.status );
+          return response;
+        }
+        response.json().then((data) => {
+          console.log('response.json data: ', data);
+          return data;
+        });
+      }).catch((err) => {
+        console.log('error: ', err);
       });
     },
   },
@@ -185,17 +194,6 @@ export default Ember.Component.extend(NodeDriver, {
       headers: headers,
       dataType: 'json',
       body: params
-    }).then((response) => {
-      if(response.status !== 200) {
-        console.log('response status not 200: ', response.status );
-        return;
-      }
-      response.json().then((data) => {
-        console.log('response.json data: ', data);
-        return data;
-      });
-    }).catch((err) => {
-      console.log('error: ', err);
     });
   },
   // Any computed properties or custom logic can go here
