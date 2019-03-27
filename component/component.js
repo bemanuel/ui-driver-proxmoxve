@@ -46,6 +46,7 @@ export default Ember.Component.extend(NodeDriver, {
   driverName:     '%%DRIVERNAME%%',
   config:          alias('model.%%DRIVERNAME%%Config'),
   app:             service(),
+  cookies:         service(),
   authToken:       null,
   netModelChoices: NET_MODEL_CHOICES,
   step:            1,
@@ -153,7 +154,7 @@ export default Ember.Component.extend(NodeDriver, {
     proxmoxLogin() {
       let self = this;
       set(self, 'errors', null);
-      self.apiRequest('/access/ticket').then((response) => {
+      self.apiRequest('POST', '/access/ticket').then((response) => {
 
         if(response.status !== 200) {
           console.log('response status !== 200 [authentication]: ', response.status );
@@ -167,16 +168,14 @@ export default Ember.Component.extend(NodeDriver, {
             step: 2
           });
         
-          self.apiRequest(`/nodes/${self.config.node}/network`).then((response) => {
+          self.apiRequest('GET', `/nodes/${self.config.node}/network`).then((response) => {
             if(response.status !== 200) {
               console.log('response status !== 200 [networks]: ', response.status );
               return;
             }
             response.json().then((json) => {
-              console.log('response.json [networks]: ', json);
               setProperties(self, {
-                bridges: json.data,
-                step: 2
+                bridges: json.data.filter(device => device.type === 'bridge'),
               });
             });
           }).catch((err) => {
@@ -189,7 +188,7 @@ export default Ember.Component.extend(NodeDriver, {
       });  
     },
   },
-  apiRequest: function(path) {
+  apiRequest: function(method, path) {
     let self       = this;
     let apiUrl     = `${self.config.host}:${self.config.port}/api2/json${path}`;
     let url        = `${ get(this, 'app.proxyEndpoint') }/`;
@@ -204,18 +203,16 @@ export default Ember.Component.extend(NodeDriver, {
       params       = `username=${username}&password=${password}`;
       headers.append('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
     } else {
-      console.log(`Set-Cookie: PVEAuthCookie=${self.authToken.ticket};`);
-      console.log(`CSRFPreventionToken: ${self.authToken.CSRFPreventionToken}`);
-      console.log(`username: ${self.authToken.username}`);
-
-      headers.append('Set-Cookie', `PVEAuthCookie=${self.authToken.ticket};`);
+      get(this, 'cookies').setWithOptions("PVEAuthCookie", self.authToken.ticket, {
+        secure: 'auto'
+      });
       headers.append("CSRFPreventionToken", self.authToken.CSRFPreventionToken);
       headers.append("username", self.authToken.username);
     }
     headers.append('Accept', 'application/json');
 
     return fetch(url, {
-      method: 'POST',
+      method: method,
       headers: headers,
       dataType: 'json',
       credentials: 'include',
