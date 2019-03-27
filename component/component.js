@@ -82,6 +82,7 @@ export default Ember.Component.extend(NodeDriver, {
       realm:                  this.fieldDef('realm').default,
       password:               '.VmNode1#',
       host:                   /*this.fieldDef('host').default*/ 'pve.wdc.modil.io',
+      node:                   /*this.fieldDef('node').default*/ 'pve',
       port:                   8006,
       cpuSockets:             this.fieldDef('cpuSockets').default,
       cpuCores:               this.fieldDef('cpuCores').default,
@@ -151,21 +152,41 @@ export default Ember.Component.extend(NodeDriver, {
   actions: {
     proxmoxLogin() {
       let self = this;
-      set(this, 'errors', null);
-      let bridges = [];
-
+      set(self, 'errors', null);
       self.apiRequest('/access/ticket').then((response) => {
+
         if(response.status !== 200) {
-          console.log('response status not 200: ', response.status );
-          return response;
+          console.log('response status !== 200 [authentication]: ', response.status );
+          return;
         }
-        response.json().then((data) => {
-          console.log('response.json data: ', data);
-          return data;
+
+        response.json().then((json) => {
+          console.log('response.json [authentication]: ', json);
+          setProperties(self, {
+            authToken: json.data,
+            step: 2
+          });
+        
+          self.apiRequest(`/nodes/${self.config.node}/network`).then((response) => {
+            if(response.status !== 200) {
+              console.log('response status !== 200 [networks]: ', response.status );
+              return;
+            }
+            response.json().then((json) => {
+              console.log('response.json [networks]: ', json);
+              setProperties(self, {
+                bridges: json.data,
+                step: 2
+              });
+            });
+          }).catch((err) => {
+            console.log('Error getting Networks: ', err);
+          });
         });
+
       }).catch((err) => {
-        console.log('error: ', err);
-      });
+        console.log('Authentication error: ', err);
+      });  
     },
   },
   apiRequest: function(path) {
@@ -183,9 +204,13 @@ export default Ember.Component.extend(NodeDriver, {
       params       = `username=${username}&password=${password}`;
       headers.append('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
     } else {
-      headers.append('cookie', `PVEAuthCookie=${self.authToken.Ticket};`);
+      console.log(`Set-Cookie: PVEAuthCookie=${self.authToken.ticket};`);
+      console.log(`CSRFPreventionToken: ${self.authToken.CSRFPreventionToken}`);
+      console.log(`username: ${self.authToken.username}`);
+
+      headers.append('Set-Cookie', `PVEAuthCookie=${self.authToken.ticket};`);
       headers.append("CSRFPreventionToken", self.authToken.CSRFPreventionToken);
-      headers.append("username", self.authToken.Username);
+      headers.append("username", self.authToken.username);
     }
     headers.append('Accept', 'application/json');
 
@@ -193,6 +218,7 @@ export default Ember.Component.extend(NodeDriver, {
       method: 'POST',
       headers: headers,
       dataType: 'json',
+      credentials: 'include',
       body: params
     });
   },

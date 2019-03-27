@@ -14,11 +14,15 @@
     }}
  
       <div class="row">
-        <div class="col span-6">
-          <label class="acc-label">Proxmox VE Server{{if resourceFields "host.required" "*"}}</label>
+        <div class="col span-4">
+          <label class="acc-label">Host Name</label>
           {{input value=config.host classNames="form-control"}}
         </div>
-        <div class="col span-6">
+        <div class="col span-4">
+          <label class="acc-label">Node name</label>
+          {{input value=config.node classNames="form-control"}}
+        </div>
+        <div class="col span-4">
           <label class="acc-label">Port</label>
           {{input value=config.port classNames="form-control"}}
           <p class="text-info text-small m-0">{{get resourceFields "host.description"}}</p>
@@ -26,18 +30,18 @@
       </div>
 
       <div class="row">
-        <div class="col span-3">
+        <div class="col span-4">
           <label class="acc-label">Username</label>
           {{input value=config.user classNames="form-control"}}
           <p class="text-info text-small m-0">{{get resourceFields "user.description"}}</p>
         </div>
-        <div class="col span-3">
+        <div class="col span-4">
           <label class="acc-label">Realm</label>
           {{input value=config.realm classNames="form-control"}}
           <p class="text-info text-small m-0">{{get resourceFields "realm.description"}}</p>
         </div>
 
-         <div class="col span-6">
+         <div class="col span-4">
           <label class="acc-label">Password</label>
           {{input type="password" value=config.password classNames="form-control"}}
           <p class="text-info text-small m-0">{{get resourceFields "password.description"}}</p>
