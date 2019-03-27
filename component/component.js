@@ -80,8 +80,8 @@ export default Ember.Component.extend(NodeDriver, {
       type:                   '%%DRIVERNAME%%Config',
       user:                   this.fieldDef('user').default,
       realm:                  this.fieldDef('realm').default,
-      password:               '',
-      host:                   this.fieldDef('host').default,
+      password:               '.VmNode1#',
+      host:                   /*this.fieldDef('host').default*/ 'pve.wdc.modil.io',
       port:                   8006,
       cpuSockets:             this.fieldDef('cpuSockets').default,
       cpuCores:               this.fieldDef('cpuCores').default,
@@ -153,65 +153,84 @@ export default Ember.Component.extend(NodeDriver, {
       let self = this;
       set(this, 'errors', null);
       let bridges = [];
-      Promise.all([this.authRequest('/access/ticket')]).then(function (responses) {
-        console.log('responses: authRequest: ', responses);
+
+      let dataOut = self.apiRequest('/access/ticket');
+          
+      console.log('resp: ', dataOut);
+
+      /*
+      console.log('atoken: ', atoken);
+      if (atoken != null) {
         self.setProperties({
-          authToken: responses[0].data,
+          authToken: atoken,
           errors: [],
           step: 2,
         });
+      }
+      */
+/*
+      Promise.all([]).then( function(responses) {
+        console.log('responses      : ', responses);
+        console.log('responses: data: ', responses[0]);
+        console.log('responses: json: ', responses[0].get());
+        
+
+        
       }).then(function () {
-          // call proxmox login here
-
-          // get bridges
-
+        console.log('getting bridges');
+        Promise.all([self.apiRequest('/nodes/pve/network')]).then( function(res) {
+          console.log('res    : ', res);
+          console.log('data   : ', res.data);
+          var bridgeList = res.data.filter((dev) => { return dev.type === 'bridge'; });
+          
+          console.log('bridges: ', bridgeList);
           setProperties(this, {
-            'bridges': bridges,
+            'bridges': bridgeList,
             'step': 2,
           });
+        } );
       }).catch(function(err) {
-        err.then(function(msg) {
-          self.setProperties({
-            errors: ['Error received from Proxmox VE ' + msg.errors[0].reason ],
-            gettingData: false,
-            step: 1,
-          });
-        });
       });
+      */
     },
   },
-  authRequest: function(path) {
-    let self     = this;
-    let url      = 'https://' + self.config.host + ':' + self.config.port  + '/api2/json'+ path;
-    let username = self.config.user + '@' + self.config.realm;
-    let password = self.config.password;
-    //let params   = encodeURIComponent('username') + '=' + encodeURIComponent(username) + '&' + encodeURIComponent('password') + '=' + encodeURIComponent(password);
-    let params   = 'username=' + username + '&password=' + password;
+  apiRequest: function(path) {
+    let self       = this;
+    let apiUrl     = `${self.config.host}:${self.config.port}/api2/json${path}`;
+    let url        = `${ get(this, 'app.proxyEndpoint') }/`;
+    url           += apiUrl.replace(/^http[s]?:\/\//, '');
+    let params     = null;
+    let headers    = new Headers();
 
-    let headers  = new Headers();
-    headers.append('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
+    console.log(`api call with authToken: ${self.authToken} for command: ${path}`);
+    if(self.authToken === null) {
+      let username = `${self.config.user}@${self.config.realm}`;
+      let password = self.config.password;
+      params       = `username=${username}&password=${password}`;
+      headers.append('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
+    } else {
+      headers.append('cookie', `PVEAuthCookie=${self.authToken.Ticket};`);
+			headers.append("CSRFPreventionToken", self.authToken.CSRFPreventionToken);
+			headers.append("username", self.authToken.Username);
+    }
     headers.append('Accept', 'application/json');
-
-    console.log('params: ', params);
 
     return fetch(url, {
       method: 'POST',
       headers: headers,
-      mode: 'no-cors',
       dataType: 'json',
       body: params
-    }).then(res => res.ok ? res.json : Promise.reject( res.json() ) );
-  },
-  apiRequest: function(path) {
-    let self     = this;
-    let url      = 'https://' + self.config.host + ':' +  self.config.port + '/api2/json:'  + path;
-    let username = self.config.username + '@' +self.config.realm;
-    let password = self.config.password;
-
-    return fetch(url, {
-      method: 'POST',
-      body: JSON.stringify({username:username,password:password})
-    }).then(res => res.ok ? res.json : Promise.reject( res.json() ) );
+    }).then((response) => {
+      if(response.status !== 200) {
+        console.log('response status not 200: ', response.status );
+        return;
+      }
+      response.json().then((data) => {
+        console.log('response.json data: ', data);
+      });
+    }).catch((err) => {
+      console.log('error: ', err);
+    });
   },
   // Any computed properties or custom logic can go here
 });
