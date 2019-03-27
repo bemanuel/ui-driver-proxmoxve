@@ -157,44 +157,6 @@ export default Ember.Component.extend(NodeDriver, {
       self.apiRequest('/access/ticket').then(function(data) {
         console.log('data out: ', data);
       });
-          
-      
-
-      /*
-      console.log('atoken: ', atoken);
-      if (atoken != null) {
-        self.setProperties({
-          authToken: atoken,
-          errors: [],
-          step: 2,
-        });
-      }
-      */
-/*
-      Promise.all([]).then( function(responses) {
-        console.log('responses      : ', responses);
-        console.log('responses: data: ', responses[0]);
-        console.log('responses: json: ', responses[0].get());
-        
-
-        
-      }).then(function () {
-        console.log('getting bridges');
-        Promise.all([self.apiRequest('/nodes/pve/network')]).then( function(res) {
-          console.log('res    : ', res);
-          console.log('data   : ', res.data);
-          var bridgeList = res.data.filter((dev) => { return dev.type === 'bridge'; });
-          
-          console.log('bridges: ', bridgeList);
-          setProperties(this, {
-            'bridges': bridgeList,
-            'step': 2,
-          });
-        } );
-      }).catch(function(err) {
-      });
-      */
-    },
   },
   apiRequest: function(path) {
     let self       = this;
